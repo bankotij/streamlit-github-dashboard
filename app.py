@@ -1,23 +1,34 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import zipfile
+
+
+with zipfile.ZipFile('repository_data.zip', 'r') as zip_ref:
+    with zip_ref.open('repository_data.csv') as f:
+        repository_data = pd.read_csv(f)
+
 
 github_data = pd.read_csv('github_dataset.csv')
-repository_data = pd.read_csv('repository_data.csv')
+
 
 github_data_cleaned = github_data.drop_duplicates(subset='repositories')
 repository_data_cleaned = repository_data.drop_duplicates(subset='name')
 
+
 github_data_cleaned['stars_count'] = pd.to_numeric(github_data_cleaned['stars_count'], errors='coerce')
 github_data_cleaned = github_data_cleaned.dropna(subset=['stars_count'])
+
 
 st.title('GitHub Repository Data Analysis')
 
 st.sidebar.header('Customize Display')
 top_n = st.sidebar.slider('Select the number of top repositories to display:', min_value=5, max_value=50, value=10, step=5)
 
+
 valid_stars_repos = repository_data_cleaned[repository_data_cleaned['stars_count'].notna() & (repository_data_cleaned['stars_count'] > 0)]
 available_repos = min(top_n, len(valid_stars_repos))
+
 
 st.subheader(f'Top {available_repos} Repositories by Stars')
 valid_stars_repos = valid_stars_repos.drop_duplicates(subset='name').dropna(subset=['stars_count'])
@@ -32,6 +43,7 @@ fig = px.bar(top_stars, x='name', y='stars_count', color='primary_language',
              title=f'Top {available_repos} Repositories by Stars')
 st.plotly_chart(fig)
 
+
 available_forks_repos = min(top_n, len(github_data_cleaned))
 st.subheader(f'Top {available_forks_repos} Repositories by Forks')
 top_forks = github_data_cleaned.nlargest(available_forks_repos, 'forks_count').sort_values('forks_count', ascending=False)
@@ -45,6 +57,7 @@ fig2 = px.bar(top_forks, x='repositories', y='forks_count', color='language',
               title=f'Top {available_forks_repos} Repositories by Forks')
 st.plotly_chart(fig2)
 
+
 available_languages = min(top_n, len(repository_data_cleaned['primary_language'].value_counts()))
 st.subheader(f'Top {available_languages} Most Common Programming Languages')
 language_count = repository_data_cleaned['primary_language'].value_counts().nlargest(available_languages)
@@ -55,6 +68,7 @@ fig3 = px.bar(language_count, x=language_count.index, y=language_count.values,
               labels={'x': 'Language', 'y': 'Count'},
               title=f'Top {available_languages} Most Common Programming Languages')
 st.plotly_chart(fig3)
+
 
 available_comparison_repos = min(top_n, len(github_data_cleaned))
 st.subheader(f'Top {available_comparison_repos} Repositories - Stars vs Forks Comparison')
@@ -68,6 +82,7 @@ fig4 = px.scatter(comparison_data, x='Stars', y='Forks',
                   labels={'Stars': 'Stars', 'Forks': 'Forks', 'Language': 'Language'},
                   title=f'Top {available_comparison_repos} Repositories - Stars vs Forks Comparison')
 st.plotly_chart(fig4)
+
 
 available_contributors_repos = min(top_n, len(github_data_cleaned))
 st.subheader(f'Top {available_contributors_repos} Repositories by Contributors')
